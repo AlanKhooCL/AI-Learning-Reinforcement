@@ -132,8 +132,7 @@ app.get('/api/learn/:topic', async (req, res) => {
 });
 
 // --- 4. Start the Server ---
-const PORT = 3000;
+const PORT = process.env.PORT || 3000; // Render will inject its own port here
 app.listen(PORT, () => {
-    console.log(`🚀 Lo-Fi Learn API is running!`);
-    console.log(`🌐 Test it in your browser: http://localhost:${PORT}/api/learn/Defining%20AI:%20Machines%20That%20Think`);
+    console.log(`🚀 AI Learning Reinforcement is running on port ${PORT}!`);
 });

@@ -16,6 +16,7 @@ app.use(express.json());
 
 // --- 2. The Core Logic (From your successful test) ---
 const generationConfig = {
+    temperature: 0.1,
     responseMimeType: "application/json",
     responseSchema: {
         type: "OBJECT",

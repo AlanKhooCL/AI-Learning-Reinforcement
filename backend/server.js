@@ -87,10 +87,16 @@ async function generateCards(targetTopic) {
         model: "gemini-2.5-flash",
         systemInstruction: `You are an expert instructional designer creating content for a mobile microlearning app. 
         Take the provided topic and source material and break it down into a highly engaging, 3-card "Chapter" to reinforce learning.
+        
         The cards array MUST contain exactly 3 objects in this order:
-        1. type: "concept" - A clear, concise explanation.
-        2. type: "analogy" - A relatable real-world analogy. Include 1-2 emojis in visualEmoji.
-        3. type: "quiz" - A simple active-recall multiple-choice question to test the concept with 3 options.`
+        1. type: "concept" - A clear, concise explanation (maximum 3 sentences).
+        2. type: "analogy" - A relatable real-world analogy. Include EXACTLY 1 or 2 emojis in the visualEmoji field. DO NOT spam or repeat emojis.
+        3. type: "quiz" - A simple active-recall multiple-choice question to test the concept with 3 options.
+        
+        CRITICAL RULES: 
+        - Keep all content extremely concise. 
+        - The absolute maximum length for any text field is 500 characters.
+        - NEVER output repetitive characters or endless emoji loops.`
     });
 
     const prompt = `Topic: ${targetTopic}\nSource Material: ${sourceMaterial}`;

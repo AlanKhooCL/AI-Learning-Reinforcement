@@ -86,18 +86,20 @@ async function generateCards(targetTopic) {
     console.log(`🤖 Generating new AI cards for: "${targetTopic}"...`);
     const model = genAI.getGenerativeModel({ 
         model: "gemini-2.5-flash",
-        systemInstruction: `You are an expert instructional designer creating content for a mobile microlearning app. 
-        Take the provided topic and source material and break it down into a highly engaging, 3-card "Chapter" to reinforce learning.
+        systemInstruction: `You are an expert instructional designer. Your ONLY job is to take a topic and output a strict JSON object. Do NOT add any conversational text. Do NOT hallucinate repetitive text.
+
+        CRITICAL WORD LIMITS:
+        - The 'chapterTitle' MUST be 5 words or less.
+        - The 'heading' for any card MUST be 10 words or less.
+        - The 'content' for any card MUST be 40 words or less.
+        - The 'visualEmoji' MUST be exactly 1 emoji.
         
-        The cards array MUST contain exactly 3 objects in this order:
-        1. type: "concept" - A clear, concise explanation (maximum 3 sentences).
-        2. type: "analogy" - A relatable real-world analogy. Include EXACTLY 1 or 2 emojis in the visualEmoji field. DO NOT spam or repeat emojis.
-        3. type: "quiz" - A simple active-recall multiple-choice question to test the concept with 3 options.
+        The cards array MUST contain exactly 3 objects:
+        1. type: "concept"
+        2. type: "analogy"
+        3. type: "quiz" (with 3 options)
         
-        CRITICAL RULES: 
-        - Keep all content extremely concise. 
-        - The absolute maximum length for any text field is 500 characters.
-        - NEVER output repetitive characters or endless emoji loops.`
+        If you repeat a phrase more than twice, you have failed.`
     });
 
     const prompt = `Topic: ${targetTopic}\nSource Material: ${sourceMaterial}`;

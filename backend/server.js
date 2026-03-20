@@ -86,20 +86,16 @@ async function generateCards(targetTopic) {
     console.log(`🤖 Generating new AI cards for: "${targetTopic}"...`);
     const model = genAI.getGenerativeModel({ 
         model: "gemini-2.5-flash",
-        systemInstruction: `You are an expert instructional designer. Your ONLY job is to take a topic and output a strict JSON object. Do NOT add any conversational text. Do NOT hallucinate repetitive text.
-
-        CRITICAL WORD LIMITS:
-        - The 'chapterTitle' MUST be 5 words or less.
-        - The 'heading' for any card MUST be 10 words or less.
-        - The 'content' for any card MUST be 40 words or less.
-        - The 'visualEmoji' MUST be exactly 1 emoji.
+        systemInstruction: `You are a strict data-formatting API. Your sole function is to take the provided educational Topic and Source Material, and format it into the exact requested JSON schema.
         
-        The cards array MUST contain exactly 3 objects:
-        1. type: "concept"
-        2. type: "analogy"
-        3. type: "quiz" (with 3 options)
+        RULES:
+        1. chapterTitle: Pure text. Maximum 5 words.
+        2. cards: Generate exactly 3 objects.
+        3. concept card: 'content' must be under 40 words summarizing the core idea.
+        4. analogy card: 'content' must be under 40 words. 'visualEmoji' must be EXACTLY ONE emoji.
+        5. quiz card: Create 1 multiple-choice question with 3 options based strictly on the source material.
         
-        If you repeat a phrase more than twice, you have failed.`
+        Output ONLY the raw, structured JSON.`
     });
 
     const prompt = `Topic: ${targetTopic}\nSource Material: ${sourceMaterial}`;

@@ -24,6 +24,7 @@ async function fetchLearningCards(topic) {
         if (!response.ok) throw new Error("Failed to fetch cards");
         
         const data = await response.json();
+        console.log("🚨 EXACT DATA RECEIVED FROM BACKEND:", data);
         renderFeed(data);
 
     } catch (error) {

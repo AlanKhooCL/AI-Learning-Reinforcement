@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lo-Fi Learn</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="noise-overlay"></div>
+
+    <main class="scroll-container" id="feed">
+        <section class="card">
+            <div class="card-content">
+                <span class="tag">Chapter 1 • Concept</span>
+                <h2>Supply & Demand</h2>
+                <p>The relationship between the quantity of a commodity that producers wish to sell at various prices and the quantity that consumers wish to buy.</p>
+                <div class="swipe-hint">Swipe up <span>↑</span></div>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-content">
+                <span class="tag">Chapter 1 • Analogy</span>
+                <h2>Think of concert tickets.</h2>
+                <div class="visual-placeholder">🎸 🎟️</div>
+                <p>If Taylor Swift comes to town (high demand) but there's only one stadium (low supply), the price skyrockets.</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-content">
+                <span class="tag">Chapter 1 • Quick Check</span>
+                <h2>If supply goes up and demand stays the same, what happens to the price?</h2>
+                <div class="quiz-options">
+                    <button class="quiz-btn wrong" onclick="checkAnswer(this, false)">Price goes up</button>
+                    <button class="quiz-btn correct" onclick="checkAnswer(this, true)">Price goes down</button>
+                    <button class="quiz-btn wrong" onclick="checkAnswer(this, false)">Price stays the same</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="card chapter-complete">
+            <div class="card-content">
+                <h2>☕ Chapter Complete!</h2>
+                <p>You've mastered the basics of Supply & Demand.</p>
+                <button class="continue-btn">Keep Going</button>
+            </div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

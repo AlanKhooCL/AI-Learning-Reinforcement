@@ -33,23 +33,21 @@ async function generateCards(targetTopic) {
     const subChaptersSheet = doc.sheetsByTitle['SubChapters'];
     const cardsSheet = doc.sheetsByTitle['Reinforcement_Cards'];
 
-    // Check Cache
+  // Check Cache
     const cachedRows = await cardsSheet.getRows();
-    const existingCard = cachedRows.find(row => row.Ref_ID === targetTopic);
+    const existingCard = cachedRows.find(row => row.get('Ref_ID') === targetTopic);
 
     if (existingCard) {
         console.log(`✅ Served "${targetTopic}" directly from Sheets cache.`);
-        return JSON.parse(existingCard.JSON_Payload);
+        return JSON.parse(existingCard.get('JSON_Payload'));
     }
 
-   // Gather Content
+    // Gather Content
     const subChapterRows = await subChaptersSheet.getRows();
     
-    // The "Fuzzy Matcher" - Removes all spaces and weird characters before comparing
+    // The "Fuzzy Matcher" using .get()
     const targetSubChapter = subChapterRows.find(row => {
-        const sheetTitle = row['SubChapter Title'] || "";
-        
-        // Strip out everything except actual letters and numbers
+        const sheetTitle = row.get('SubChapter Title') || "";
         const cleanSheetTitle = sheetTitle.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         const cleanTargetTopic = targetTopic.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
         
@@ -60,7 +58,8 @@ async function generateCards(targetTopic) {
     let sourceType = "Ad-Hoc";
 
     if (targetSubChapter) {
-        sourceMaterial = targetSubChapter.Content || "No content found in this cell."; 
+        // Grab the content using .get()
+        sourceMaterial = targetSubChapter.get('Content') || "No content found in this cell."; 
         sourceType = "LMS";
     }
 
@@ -145,8 +144,9 @@ app.get('/api/topics', async (req, res) => {
         console.log("🕵️ SPREADSHEET HEADERS:", subChaptersSheet.headerValues);
 
         // 3. Extract just the titles
+        // Extract just the titles using the new .get() syntax
         const topics = rows
-            .map(row => row['SubChapter Title'])
+            .map(row => row.get('SubChapter Title'))
             .filter(title => title); // Filters out any blank rows
             
         console.log("📋 TOPICS FOUND:", topics); 

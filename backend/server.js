@@ -62,7 +62,7 @@ async function generateCards(targetTopic) {
     // Call Gemini with a strict JSON template instead of a schema object
     console.log(`🤖 Generating cards...`);
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         systemInstruction: `You are a data API. Read the provided Topic and Source Material, and convert it into the exact JSON structure below. DO NOT output markdown formatting, backticks, or conversational text. Output pure JSON only.
 
         {

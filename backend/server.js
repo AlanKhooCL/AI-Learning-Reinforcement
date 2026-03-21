@@ -124,7 +124,7 @@ async function generateCards(targetTopic) {
 // --- 3. The API Endpoints ---
 
 // This is the route your frontend will call!
-// --- NEW ENDPOINT: Get Grouped Curriculum ---
+// --- NEW ENDPOINT: Get Grouped Curriculum (Relational Version) ---
 app.get('/api/topics', async (req, res) => {
     try {
         const serviceAccountAuth = new JWT({
@@ -135,30 +135,52 @@ app.get('/api/topics', async (req, res) => {
         const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
         await doc.loadInfo();
 
+        // 1. Fetch all three sheets
+        const coursesSheet = doc.sheetsByTitle['Courses'];
+        const chaptersSheet = doc.sheetsByTitle['Chapters'];
         const subChaptersSheet = doc.sheetsByTitle['SubChapters'];
-        const rows = await subChaptersSheet.getRows();
 
-        // Build the nested curriculum object
+        const [courseRows, chapterRows, subChapterRows] = await Promise.all([
+            coursesSheet.getRows(),
+            chaptersSheet.getRows(),
+            subChaptersSheet.getRows()
+        ]);
+
+        // 2. Build Lookup Dictionaries (Connecting the IDs)
+        const courseMap = {}; // { courseID: "Course Title" }
+        courseRows.forEach(row => {
+            courseMap[row.get('CourseID')] = row.get('Course Title');
+        });
+
+        const chapterMap = {}; // { chapterID: { title: "Chapter Title", courseID: "..." } }
+        chapterRows.forEach(row => {
+            chapterMap[row.get('ChapterID')] = {
+                title: row.get('Chapter Title'),
+                courseId: row.get('CourseID')
+            };
+        });
+
+        // 3. Build the final nested curriculum object
         const curriculum = {};
 
-        rows.forEach(row => {
-            const course = row.get('Course Title') || 'Uncategorized Course';
-            const chapter = row.get('Chapter Title') || 'Uncategorized Chapter';
-            const subChapter = row.get('SubChapter Title');
+        subChapterRows.forEach(row => {
+            const subChapterTitle = row.get('SubChapter Title');
+            const chapterId = row.get('ChapterID');
 
-            if (!subChapter) return; // Skip empty rows
+            if (!subChapterTitle || !chapterId) return; // Skip invalid rows
 
-            // If the course doesn't exist in our object yet, create it
-            if (!curriculum[course]) {
-                curriculum[course] = {};
-            }
-            // If the chapter doesn't exist in this course yet, create it
-            if (!curriculum[course][chapter]) {
-                curriculum[course][chapter] = [];
-            }
+            // Look up the parent Chapter and Course using the maps
+            const parentChapter = chapterMap[chapterId];
+            if (!parentChapter) return; // Orphaned subchapter, skip it
 
-            // Add the subchapter to the correct bucket
-            curriculum[course][chapter].push(subChapter);
+            const chapterTitle = parentChapter.title || 'Unknown Chapter';
+            const courseTitle = courseMap[parentChapter.courseId] || 'Unknown Course';
+
+            // Build the nested structure
+            if (!curriculum[courseTitle]) curriculum[courseTitle] = {};
+            if (!curriculum[courseTitle][chapterTitle]) curriculum[courseTitle][chapterTitle] = [];
+
+            curriculum[courseTitle][chapterTitle].push(subChapterTitle);
         });
 
         res.json(curriculum);

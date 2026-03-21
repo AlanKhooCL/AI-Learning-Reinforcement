@@ -148,30 +148,47 @@ closeMenuBtn.addEventListener('click', () => {
     menuOverlay.classList.add('menu-hidden');
 });
 
-// Fetch topics from the backend
+// Fetch and build the grouped curriculum menu
 async function loadCurriculum() {
     try {
         const response = await fetch(`${API_BASE_URL}/api/topics`);
         if (!response.ok) throw new Error("Failed to load topics");
         
-        const topics = await response.json();
+        // This is now a nested object, not a flat array!
+        const curriculum = await response.json();
         
-        // Clear the loading message
         topicList.innerHTML = ''; 
 
-        // Build the touch-friendly list
-        topics.forEach(topic => {
-            const li = document.createElement('li');
-            li.textContent = topic;
-            
-            // When a topic is tapped...
-            li.addEventListener('click', () => {
-                menuOverlay.classList.add('menu-hidden'); // 1. Close the menu
-                fetchLearningCards(topic);                // 2. Fetch the AI cards!
-            });
-            
-            topicList.appendChild(li);
-        });
+        // Loop through the Courses
+        for (const [courseName, chapters] of Object.entries(curriculum)) {
+            const courseLi = document.createElement('li');
+            courseLi.className = 'menu-course';
+            courseLi.innerHTML = `📘 <strong>${courseName}</strong>`;
+            topicList.appendChild(courseLi);
+
+            // Loop through the Chapters inside this Course
+            for (const [chapterName, subChapters] of Object.entries(chapters)) {
+                const chapterLi = document.createElement('li');
+                chapterLi.className = 'menu-chapter';
+                chapterLi.innerHTML = `📂 ${chapterName}`;
+                topicList.appendChild(chapterLi);
+
+                // Loop through the SubChapters
+                subChapters.forEach(subChapterTitle => {
+                    const subLi = document.createElement('li');
+                    subLi.className = 'menu-subchapter';
+                    subLi.textContent = `📄 ${subChapterTitle}`;
+                    
+                    // The click event to fetch the cards!
+                    subLi.addEventListener('click', () => {
+                        menuOverlay.classList.add('menu-hidden'); 
+                        fetchLearningCards(subChapterTitle);                
+                    });
+                    
+                    topicList.appendChild(subLi);
+                });
+            }
+        }
 
     } catch (error) {
         console.error("Error loading curriculum:", error);

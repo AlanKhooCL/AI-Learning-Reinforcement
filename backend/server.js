@@ -44,7 +44,9 @@ async function generateCards(targetTopic) {
 
     // Gather Content
     const subChapterRows = await subChaptersSheet.getRows();
-    const targetSubChapter = subChapterRows.find(row => row['SubChapter Title'] === targetTopic);
+    const targetSubChapter = subChapterRows.find(row => 
+        row['SubChapter Title'] && row['SubChapter Title'].trim().toLowerCase() === targetTopic.trim().toLowerCase()
+    );
 
     let sourceMaterial = "Explain this topic generally.";
     let sourceType = "Ad-Hoc";

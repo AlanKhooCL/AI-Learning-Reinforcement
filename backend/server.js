@@ -7,21 +7,20 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const creds = require('./google-credentials.json');
 
 // --- 1. Configuration ---
-const SPREADSHEET_ID = '1nWHsfEHSl17zJN13DnnYdoBqtYKmVPuuUcxS2DtkFdw'; // <-- PASTE YOUR ID HERE
+const SPREADSHEET_ID = '1nWHsfEHSl17zJN13DnnYdoBqtYKmVPuuUcxS2DtkFdw';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const app = express();
-app.use(cors()); // Allows your frontend to securely request data
+app.use(cors()); 
 app.use(express.json());
 
 // --- 2. The Core Logic ---
 const generationConfig = {
-    temperature: 0.2, // slightly warmed up to prevent robotic looping
+    temperature: 0.2, 
     responseMimeType: "application/json" 
-    // Notice we removed responseSchema. We will enforce structure in the text prompt instead.
 };
 
-async function generateCards(targetTopic) {
+async function generateCards(targetTopic, requestedModel) {
     const serviceAccountAuth = new JWT({
         email: creds.client_email,
         key: creds.private_key,
@@ -33,7 +32,7 @@ async function generateCards(targetTopic) {
     const subChaptersSheet = doc.sheetsByTitle['SubChapters'];
     const cardsSheet = doc.sheetsByTitle['Reinforcement_Cards'];
 
-  // Check Cache
+    // Check Cache
     const cachedRows = await cardsSheet.getRows();
     const existingCard = cachedRows.find(row => row.get('Ref_ID') === targetTopic);
 
@@ -45,7 +44,7 @@ async function generateCards(targetTopic) {
     // Gather Content
     const subChapterRows = await subChaptersSheet.getRows();
     
-    // The "Fuzzy Matcher" using .get()
+    // The "Fuzzy Matcher"
     const targetSubChapter = subChapterRows.find(row => {
         const sheetTitle = row.get('SubChapter Title') || "";
         const cleanSheetTitle = sheetTitle.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -58,19 +57,18 @@ async function generateCards(targetTopic) {
     let sourceType = "Ad-Hoc";
 
     if (targetSubChapter) {
-        // Grab the content using .get()
         sourceMaterial = targetSubChapter.get('Content') || "No content found in this cell."; 
         sourceType = "LMS";
     }
 
-    // THE SANITY CHECK: Print what we found to the Render logs
+    // Sanity Check Logs
     console.log(`\n🔍 TARGET TOPIC: "${targetTopic}"`);
     console.log(`📖 CONTENT GRABBED: "${sourceMaterial.substring(0, 150)}..."\n`);
 
-    // Call Gemini with a strict JSON template instead of a schema object
-    console.log(`🤖 Generating cards...`);
+    // Call Gemini
+    console.log(`🤖 Generating cards using model: ${requestedModel}...`);
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
+        model: requestedModel,
         systemInstruction: `You are a data API. Read the provided Topic and Source Material, and convert it into the exact JSON structure below. DO NOT output markdown formatting, backticks, or conversational text. Output pure JSON only.
 
         {
@@ -106,11 +104,11 @@ async function generateCards(targetTopic) {
         generationConfig: generationConfig
     });
 
-    // Strip out any accidental markdown backticks
+    // Strip markdown formatting
     let generatedJSON = result.response.text();
     const cleanJSON = generatedJSON.replace(/```json/gi, '').replace(/```/g, '').trim();
 
-    // Save to Cache
+    // Save to Database
     await cardsSheet.addRow({
         Ref_ID: targetTopic,
         Source: sourceType,
@@ -123,8 +121,7 @@ async function generateCards(targetTopic) {
 
 // --- 3. The API Endpoints ---
 
-// This is the route your frontend will call!
-// --- NEW ENDPOINT: Get Grouped Curriculum (Relational Version) ---
+// Endpoint 1: Get Grouped Curriculum (Relational)
 app.get('/api/topics', async (req, res) => {
     try {
         const serviceAccountAuth = new JWT({
@@ -135,7 +132,6 @@ app.get('/api/topics', async (req, res) => {
         const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
         await doc.loadInfo();
 
-        // 1. Fetch all three sheets
         const coursesSheet = doc.sheetsByTitle['Courses'];
         const chaptersSheet = doc.sheetsByTitle['Chapters'];
         const subChaptersSheet = doc.sheetsByTitle['SubChapters'];
@@ -146,13 +142,12 @@ app.get('/api/topics', async (req, res) => {
             subChaptersSheet.getRows()
         ]);
 
-        // 2. Build Lookup Dictionaries (Connecting the IDs)
-        const courseMap = {}; // { courseID: "Course Title" }
+        const courseMap = {}; 
         courseRows.forEach(row => {
             courseMap[row.get('CourseID')] = row.get('Course Title');
         });
 
-        const chapterMap = {}; // { chapterID: { title: "Chapter Title", courseID: "..." } }
+        const chapterMap = {}; 
         chapterRows.forEach(row => {
             chapterMap[row.get('ChapterID')] = {
                 title: row.get('Chapter Title'),
@@ -160,23 +155,20 @@ app.get('/api/topics', async (req, res) => {
             };
         });
 
-        // 3. Build the final nested curriculum object
         const curriculum = {};
 
         subChapterRows.forEach(row => {
             const subChapterTitle = row.get('SubChapter Title');
             const chapterId = row.get('ChapterID');
 
-            if (!subChapterTitle || !chapterId) return; // Skip invalid rows
+            if (!subChapterTitle || !chapterId) return; 
 
-            // Look up the parent Chapter and Course using the maps
             const parentChapter = chapterMap[chapterId];
-            if (!parentChapter) return; // Orphaned subchapter, skip it
+            if (!parentChapter) return; 
 
             const chapterTitle = parentChapter.title || 'Unknown Chapter';
             const courseTitle = courseMap[parentChapter.courseId] || 'Unknown Course';
 
-            // Build the nested structure
             if (!curriculum[courseTitle]) curriculum[courseTitle] = {};
             if (!curriculum[courseTitle][chapterTitle]) curriculum[courseTitle][chapterTitle] = [];
 
@@ -190,15 +182,13 @@ app.get('/api/topics', async (req, res) => {
     }
 });
 
+// Endpoint 2: Generate/Fetch Cards
 app.get('/api/learn/:topic', async (req, res) => {
+    const topic = req.params.topic;
+    const requestedModel = req.query.model || "gemini-2.5-flash"; 
+    
     try {
-        // Grab the topic from the URL
-        const requestedTopic = req.params.topic; 
-        
-        // Call your mighty function
-        const data = await generateCards(requestedTopic); 
-        
-        // Send the JSON back to the frontend
+        const data = await generateCards(topic, requestedModel); 
         res.json(data); 
     } catch (error) {
         console.error("❌ API Error:", error);
@@ -207,7 +197,7 @@ app.get('/api/learn/:topic', async (req, res) => {
 });
 
 // --- 4. Start the Server ---
-const PORT = process.env.PORT || 3000; // Render will inject its own port here
+const PORT = process.env.PORT || 3000; 
 app.listen(PORT, () => {
     console.log(`🚀 AI Learning Reinforcement is running on port ${PORT}!`);
 });

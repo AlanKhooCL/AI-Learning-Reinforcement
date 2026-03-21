@@ -131,8 +131,54 @@ window.checkAnswer = function(button, isCorrect) {
 }
 
 // --- 5. Boot it up! ---
-// Let's hardcode a test topic for now to make sure the bridge works
-fetchLearningCards('Defining AI: Machines That Think');
+
+// --- 6. Menu Logic ---
+const libraryBtn = document.getElementById('library-btn');
+const closeMenuBtn = document.getElementById('close-menu-btn');
+const menuOverlay = document.getElementById('menu-overlay');
+const topicList = document.getElementById('topic-list');
+
+// Open and Close menu
+libraryBtn.addEventListener('click', () => {
+    menuOverlay.classList.remove('menu-hidden');
+    loadCurriculum(); // Fetch the list when opened
+});
+
+closeMenuBtn.addEventListener('click', () => {
+    menuOverlay.classList.add('menu-hidden');
+});
+
+// Fetch topics from the backend
+async function loadCurriculum() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/topics`);
+        if (!response.ok) throw new Error("Failed to load topics");
+        
+        const topics = await response.json();
+        
+        // Clear the loading message
+        topicList.innerHTML = ''; 
+
+        // Build the touch-friendly list
+        topics.forEach(topic => {
+            const li = document.createElement('li');
+            li.textContent = topic;
+            
+            // When a topic is tapped...
+            li.addEventListener('click', () => {
+                menuOverlay.classList.add('menu-hidden'); // 1. Close the menu
+                fetchLearningCards(topic);                // 2. Fetch the AI cards!
+            });
+            
+            topicList.appendChild(li);
+        });
+
+    } catch (error) {
+        console.error("Error loading curriculum:", error);
+        topicList.innerHTML = `<li style="color: red;">⚠️ Could not connect to database.</li>`;
+    }
+}
+
 // Simple Quiz Logic
 function checkAnswer(button, isCorrect) {
     // Disable all buttons in this specific quiz

@@ -42,17 +42,24 @@ async function generateCards(targetTopic) {
         return JSON.parse(existingCard.JSON_Payload);
     }
 
-    // Gather Content
+   // Gather Content
     const subChapterRows = await subChaptersSheet.getRows();
-    const targetSubChapter = subChapterRows.find(row => 
-        row['SubChapter Title'] && row['SubChapter Title'].trim().toLowerCase() === targetTopic.trim().toLowerCase()
-    );
+    
+    // The "Fuzzy Matcher" - Removes all spaces and weird characters before comparing
+    const targetSubChapter = subChapterRows.find(row => {
+        const sheetTitle = row['SubChapter Title'] || "";
+        
+        // Strip out everything except actual letters and numbers
+        const cleanSheetTitle = sheetTitle.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        const cleanTargetTopic = targetTopic.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+        
+        return cleanSheetTitle === cleanTargetTopic;
+    });
 
     let sourceMaterial = "Explain this topic generally.";
     let sourceType = "Ad-Hoc";
 
     if (targetSubChapter) {
-        // Fallback in case the cell exists but is empty
         sourceMaterial = targetSubChapter.Content || "No content found in this cell."; 
         sourceType = "LMS";
     }

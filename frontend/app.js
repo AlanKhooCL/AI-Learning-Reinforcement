@@ -19,7 +19,11 @@ async function fetchLearningCards(topic) {
     `;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/learn/${encodeURIComponent(topic)}`);
+        // Grab the selected model from the dropdown
+        const selectedModel = document.getElementById('modelSelect').value;
+
+        // Pass the model to the backend in the URL
+        const response = await fetch(`${API_BASE_URL}/api/learn/${encodeURIComponent(topic)}?model=${selectedModel}`);
         
         if (!response.ok) throw new Error("Failed to fetch cards");
         
@@ -143,6 +147,16 @@ libraryBtn.addEventListener('click', () => {
     menuOverlay.classList.remove('menu-hidden');
     loadCurriculum(); // Fetch the list when opened
 });
+
+// Add this right below where you defined libraryBtn
+const startBtn = document.getElementById('start-btn');
+
+if (startBtn) {
+    startBtn.addEventListener('click', () => {
+        menuOverlay.classList.remove('menu-hidden');
+        loadCurriculum(); 
+    });
+}
 
 closeMenuBtn.addEventListener('click', () => {
     menuOverlay.classList.add('menu-hidden');

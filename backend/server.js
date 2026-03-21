@@ -125,6 +125,32 @@ async function generateCards(targetTopic) {
 // --- 3. The API Endpoints ---
 
 // This is the route your frontend will call!
+// --- NEW ENDPOINT: Get all available topics ---
+app.get('/api/topics', async (req, res) => {
+    try {
+        const serviceAccountAuth = new JWT({
+            email: creds.client_email,
+            key: creds.private_key,
+            scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+        });
+        const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
+        await doc.loadInfo();
+
+        const subChaptersSheet = doc.sheetsByTitle['SubChapters'];
+        const rows = await subChaptersSheet.getRows();
+
+        // Extract just the titles from the spreadsheet
+        const topics = rows
+            .map(row => row['SubChapter Title'])
+            .filter(title => title); // Filters out any blank rows
+
+        res.json(topics);
+    } catch (error) {
+        console.error("❌ Error fetching topics:", error);
+        res.status(500).json({ error: "Failed to load curriculum" });
+    }
+});
+
 app.get('/api/learn/:topic', async (req, res) => {
     try {
         // Grab the topic from the URL

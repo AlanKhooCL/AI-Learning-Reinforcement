@@ -104,7 +104,7 @@ function renderFeed(data) {
     `);
 
     // Re-attach the observer for scroll tracking if needed
-    attachScrollObserver();
+    //attachScrollObserver();
 }
 
 // --- 4. Quiz Logic ---

@@ -17,7 +17,7 @@ app.use(express.json());
 // --- 2. The Core Logic (From your successful test) ---
 const generationConfig = {
     temperature: 0.1,
-    maxOutputTokens: 800, // <-- THE UNBREAKABLE KILL SWITCH
+    maxOutputTokens: 2048, // <-- THE UNBREAKABLE KILL SWITCH
     responseMimeType: "application/json",
     responseSchema: {
         // ... the rest stays the same
@@ -107,16 +107,19 @@ async function generateCards(targetTopic) {
     });
 
     const generatedJSON = result.response.text();
-
+   
+    // ADD THIS: Strip away any markdown backticks the AI might have added
+    const cleanJSON = generatedJSON.replace(/```json/g, '').replace(/```/g, '').trim();
+    
     // Save to Cache
     await cardsSheet.addRow({
         Ref_ID: targetTopic,
         Source: sourceType,
-        JSON_Payload: generatedJSON
+        JSON_Payload: cleanJSON // <-- UPDATE THIS
     });
 
     console.log(`💾 Saved "${targetTopic}" to database.`);
-    return JSON.parse(generatedJSON);
+    return JSON.parse(cleanJSON); // <-- UPDATE THIS
 }
 
 // --- 3. The API Endpoints ---

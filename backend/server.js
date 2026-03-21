@@ -17,8 +17,10 @@ app.use(express.json());
 // --- 2. The Core Logic (From your successful test) ---
 const generationConfig = {
     temperature: 0.1,
+    maxOutputTokens: 800, // <-- THE UNBREAKABLE KILL SWITCH
     responseMimeType: "application/json",
     responseSchema: {
+        // ... the rest stays the same
         type: "OBJECT",
         properties: {
             chapterTitle: { type: "STRING" },

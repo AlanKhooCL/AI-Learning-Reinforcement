@@ -124,7 +124,7 @@ async function generateCards(targetTopic) {
 // --- 3. The API Endpoints ---
 
 // This is the route your frontend will call!
-// --- NEW ENDPOINT: Get all available topics ---
+// --- NEW ENDPOINT: Get Grouped Curriculum ---
 app.get('/api/topics', async (req, res) => {
     try {
         const serviceAccountAuth = new JWT({
@@ -136,22 +136,32 @@ app.get('/api/topics', async (req, res) => {
         await doc.loadInfo();
 
         const subChaptersSheet = doc.sheetsByTitle['SubChapters'];
-        
-        // 1. FETCH THE ROWS FIRST
         const rows = await subChaptersSheet.getRows();
-        
-        // 2. NOW THE DETECTIVE CAN SAFELY READ THE HEADERS!
-        console.log("🕵️ SPREADSHEET HEADERS:", subChaptersSheet.headerValues);
 
-        // 3. Extract just the titles
-        // Extract just the titles using the new .get() syntax
-        const topics = rows
-            .map(row => row.get('SubChapter Title'))
-            .filter(title => title); // Filters out any blank rows
-            
-        console.log("📋 TOPICS FOUND:", topics); 
+        // Build the nested curriculum object
+        const curriculum = {};
 
-        res.json(topics);
+        rows.forEach(row => {
+            const course = row.get('Course Title') || 'Uncategorized Course';
+            const chapter = row.get('Chapter Title') || 'Uncategorized Chapter';
+            const subChapter = row.get('SubChapter Title');
+
+            if (!subChapter) return; // Skip empty rows
+
+            // If the course doesn't exist in our object yet, create it
+            if (!curriculum[course]) {
+                curriculum[course] = {};
+            }
+            // If the chapter doesn't exist in this course yet, create it
+            if (!curriculum[course][chapter]) {
+                curriculum[course][chapter] = [];
+            }
+
+            // Add the subchapter to the correct bucket
+            curriculum[course][chapter].push(subChapter);
+        });
+
+        res.json(curriculum);
     } catch (error) {
         console.error("❌ Error fetching topics:", error);
         res.status(500).json({ error: "Failed to load curriculum" });

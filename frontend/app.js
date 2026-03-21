@@ -8,29 +8,29 @@ const feed = document.getElementById('feed');
 
 // --- 2. Fetch the Data ---
 async function fetchLearningCards(topic) {
-    // Clear the feed and show a lo-fi loading state
+    // 1. GRAB THE MODEL FIRST (While it's still on screen!)
+    const modelDropdown = document.getElementById('modelSelect');
+    const selectedModel = modelDropdown ? modelDropdown.value : "gemini-2.5-flash"; 
+
+    // 2. NOW clear the feed and show loading state
     feed.innerHTML = `
         <section class="card">
             <div class="card-content">
                 <h2>🎧 Tuning in...</h2>
-                <p>Generating cards for ${topic}</p>
+                <p>Generating cards for <strong>${topic}</strong></p>
+                <p style="font-size: 0.8rem; opacity: 0.6;">Using: ${selectedModel}</p>
             </div>
         </section>
     `;
 
     try {
-        // Grab the selected model from the dropdown
-        const selectedModel = document.getElementById('modelSelect').value;
-
-        // Pass the model to the backend in the URL
+        // 3. Use the variable we already grabbed
         const response = await fetch(`${API_BASE_URL}/api/learn/${encodeURIComponent(topic)}?model=${selectedModel}`);
         
         if (!response.ok) throw new Error("Failed to fetch cards");
         
         const data = await response.json();
-        
-        // This will print the raw data to the console so we can read it!
-        console.log("🚨 EXACT DATA RECEIVED FROM BACKEND:\n", JSON.stringify(data, null, 2)); 
+        console.log("🚨 DATA RECEIVED:", data); 
 
         renderFeed(data);
 
@@ -40,7 +40,7 @@ async function fetchLearningCards(topic) {
             <section class="card">
                 <div class="card-content">
                     <h2>⚠️ Connection Lost</h2>
-                    <p>Could not load the learning module.</p>
+                    <p>Could not load the module.</p>
                 </div>
             </section>
         `;

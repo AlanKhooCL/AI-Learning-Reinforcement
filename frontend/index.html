@@ -23,42 +23,23 @@
         </ul>
     </div>
     
-    <main class="scroll-container" id="feed">
-        <section class="card">
+<main class="scroll-container" id="feed">
+        <section class="card" id="welcome-card">
             <div class="card-content">
-                <span class="tag">Chapter 1 • Concept</span>
-                <h2>Supply & Demand</h2>
-                <p>The relationship between the quantity of a commodity that producers wish to sell at various prices and the quantity that consumers wish to buy.</p>
-                <div class="swipe-hint">Swipe up <span>↑</span></div>
-            </div>
-        </section>
-
-        <section class="card">
-            <div class="card-content">
-                <span class="tag">Chapter 1 • Analogy</span>
-                <h2>Think of concert tickets.</h2>
-                <div class="visual-placeholder">🎸 🎟️</div>
-                <p>If Taylor Swift comes to town (high demand) but there's only one stadium (low supply), the price skyrockets.</p>
-            </div>
-        </section>
-
-        <section class="card">
-            <div class="card-content">
-                <span class="tag">Chapter 1 • Quick Check</span>
-                <h2>If supply goes up and demand stays the same, what happens to the price?</h2>
-                <div class="quiz-options">
-                    <button class="quiz-btn wrong" onclick="checkAnswer(this, false)">Price goes up</button>
-                    <button class="quiz-btn correct" onclick="checkAnswer(this, true)">Price goes down</button>
-                    <button class="quiz-btn wrong" onclick="checkAnswer(this, false)">Price stays the same</button>
+                <h2>🧠 Lo-Fi Learn</h2>
+                <p>Welcome to your AI-powered study session. Select your AI engine and pick a topic to begin.</p>
+                
+                <div class="settings-group">
+                    <label for="modelSelect">AI Engine:</label>
+                    <select id="modelSelect" class="lofi-select">
+                        <option value="gemini-1.5-flash">GEMINI 1.5 FLASH (Legacy Speed)</option>
+                        <option value="gemini-1.5-pro">GEMINI 1.5 PRO (Legacy Reasoning)</option>
+                        <option value="gemini-2.5-flash">GEMINI 2.5 FLASH (Stable)</option>
+                        <option value="gemini-3-flash-preview" selected>GEMINI 3 FLASH (Next-Gen Speed)</option>
+                    </select>
                 </div>
-            </div>
-        </section>
 
-        <section class="card chapter-complete">
-            <div class="card-content">
-                <h2>☕ Chapter Complete!</h2>
-                <p>You've mastered the basics of Supply & Demand.</p>
-                <button class="continue-btn">Keep Going</button>
+                <button id="start-btn" class="continue-btn">Select Topic</button>
             </div>
         </section>
     </main>

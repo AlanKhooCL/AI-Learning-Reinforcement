@@ -126,7 +126,6 @@ async function generateCards(targetTopic) {
 
 // This is the route your frontend will call!
 // --- NEW ENDPOINT: Get all available topics ---
-// --- NEW ENDPOINT: Get all available topics ---
 app.get('/api/topics', async (req, res) => {
     try {
         const serviceAccountAuth = new JWT({
@@ -139,16 +138,17 @@ app.get('/api/topics', async (req, res) => {
 
         const subChaptersSheet = doc.sheetsByTitle['SubChapters'];
         
-        // 🕵️ THE DETECTIVE: Print the exact headers the server sees!
+        // 1. FETCH THE ROWS FIRST
+        const rows = await subChaptersSheet.getRows();
+        
+        // 2. NOW THE DETECTIVE CAN SAFELY READ THE HEADERS!
         console.log("🕵️ SPREADSHEET HEADERS:", subChaptersSheet.headerValues);
 
-        const rows = await subChaptersSheet.getRows();
-
+        // 3. Extract just the titles
         const topics = rows
             .map(row => row['SubChapter Title'])
             .filter(title => title); // Filters out any blank rows
             
-        // 📋 Check what topics it actually pulled
         console.log("📋 TOPICS FOUND:", topics); 
 
         res.json(topics);

@@ -14,41 +14,11 @@ const app = express();
 app.use(cors()); // Allows your frontend to securely request data
 app.use(express.json());
 
-// --- 2. The Core Logic (From your successful test) ---
+// --- 2. The Core Logic ---
 const generationConfig = {
-    temperature: 0.1,
-    maxOutputTokens: 2048, // <-- THE UNBREAKABLE KILL SWITCH
-    responseMimeType: "application/json",
-    responseSchema: {
-        // ... the rest stays the same
-        type: "OBJECT",
-        properties: {
-            chapterTitle: { type: "STRING" },
-            cards: {
-                type: "ARRAY",
-                items: {
-                    type: "OBJECT",
-                    properties: {
-                        type: { type: "STRING" },
-                        heading: { type: "STRING" },
-                        content: { type: "STRING" },
-                        visualEmoji: { type: "STRING" }, 
-                        question: { type: "STRING" },    
-                        options: {                       
-                            type: "ARRAY",
-                            items: {
-                                type: "OBJECT",
-                                properties: {
-                                    text: { type: "STRING" },
-                                    isCorrect: { type: "BOOLEAN" }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    temperature: 0.2, // slightly warmed up to prevent robotic looping
+    responseMimeType: "application/json" 
+    // Notice we removed responseSchema. We will enforce structure in the text prompt instead.
 };
 
 async function generateCards(targetTopic) {
@@ -76,28 +46,50 @@ async function generateCards(targetTopic) {
     const subChapterRows = await subChaptersSheet.getRows();
     const targetSubChapter = subChapterRows.find(row => row['SubChapter Title'] === targetTopic);
 
-    let sourceMaterial = "General knowledge.";
+    let sourceMaterial = "Explain this topic generally.";
     let sourceType = "Ad-Hoc";
 
     if (targetSubChapter) {
-        sourceMaterial = targetSubChapter.Content;
+        // Fallback in case the cell exists but is empty
+        sourceMaterial = targetSubChapter.Content || "No content found in this cell."; 
         sourceType = "LMS";
     }
 
-    // Call Gemini
-    console.log(`🤖 Generating new AI cards for: "${targetTopic}"...`);
+    // THE SANITY CHECK: Print what we found to the Render logs
+    console.log(`\n🔍 TARGET TOPIC: "${targetTopic}"`);
+    console.log(`📖 CONTENT GRABBED: "${sourceMaterial.substring(0, 150)}..."\n`);
+
+    // Call Gemini with a strict JSON template instead of a schema object
+    console.log(`🤖 Generating cards...`);
     const model = genAI.getGenerativeModel({ 
-        model: "gemini-2.5-flash",
-        systemInstruction: `You are a strict data-formatting API. Your sole function is to take the provided educational Topic and Source Material, and format it into the exact requested JSON schema.
-        
-        RULES:
-        1. chapterTitle: Pure text. Maximum 5 words.
-        2. cards: Generate exactly 3 objects.
-        3. concept card: 'content' must be under 40 words summarizing the core idea.
-        4. analogy card: 'content' must be under 40 words. 'visualEmoji' must be EXACTLY ONE emoji.
-        5. quiz card: Create 1 multiple-choice question with 3 options based strictly on the source material.
-        
-        Output ONLY the raw, structured JSON.`
+        model: "gemini-1.5-flash",
+        systemInstruction: `You are a data API. Read the provided Topic and Source Material, and convert it into the exact JSON structure below. DO NOT output markdown formatting, backticks, or conversational text. Output pure JSON only.
+
+        {
+          "chapterTitle": "Short Title Here",
+          "cards": [
+            {
+              "type": "concept",
+              "heading": "Main Idea",
+              "content": "Summarize the core concept in 2 or 3 sentences."
+            },
+            {
+              "type": "analogy",
+              "heading": "Analogy",
+              "content": "Create a real-world analogy for the concept.",
+              "visualEmoji": "💡"
+            },
+            {
+              "type": "quiz",
+              "question": "One multiple choice question based on the material?",
+              "options": [
+                { "text": "Correct Answer", "isCorrect": true },
+                { "text": "Wrong Answer", "isCorrect": false },
+                { "text": "Wrong Answer", "isCorrect": false }
+              ]
+            }
+          ]
+        }`
     });
 
     const prompt = `Topic: ${targetTopic}\nSource Material: ${sourceMaterial}`;
@@ -106,20 +98,19 @@ async function generateCards(targetTopic) {
         generationConfig: generationConfig
     });
 
-    const generatedJSON = result.response.text();
-   
-    // ADD THIS: Strip away any markdown backticks the AI might have added
-    const cleanJSON = generatedJSON.replace(/```json/g, '').replace(/```/g, '').trim();
-    
+    // Strip out any accidental markdown backticks
+    let generatedJSON = result.response.text();
+    const cleanJSON = generatedJSON.replace(/```json/gi, '').replace(/```/g, '').trim();
+
     // Save to Cache
     await cardsSheet.addRow({
         Ref_ID: targetTopic,
         Source: sourceType,
-        JSON_Payload: cleanJSON // <-- UPDATE THIS
+        JSON_Payload: cleanJSON
     });
 
     console.log(`💾 Saved "${targetTopic}" to database.`);
-    return JSON.parse(cleanJSON); // <-- UPDATE THIS
+    return JSON.parse(cleanJSON);
 }
 
 // --- 3. The API Endpoints ---
